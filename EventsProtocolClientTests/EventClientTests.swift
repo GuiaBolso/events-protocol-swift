@@ -112,6 +112,23 @@ class EventClientTests: XCTestCase {
         wait(for: [exp], timeout: 1)
     }
     
+    func test_sendEvent_addParmsHeadersToURLRequest() {
+        let (sut, httpClient) = makeSUT()
+        
+        sut.sendEvent(
+            url: anyURL(),
+            event: makeRequestEvent(),
+            headers: ["Test": "value"]
+        ) { _ in }
+        
+        
+        XCTAssertEqual(
+            httpClient.requestsHeaders,
+            [["Content-Type": "application/json",
+                "Test": "value"]]
+        )
+    }
+    
     // MARK: - Helpers
     
     private func makeSuccessfulResponse() -> Response {
