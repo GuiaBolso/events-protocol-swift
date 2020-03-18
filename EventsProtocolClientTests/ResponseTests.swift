@@ -18,14 +18,6 @@ class ResponseTests: XCTestCase {
         XCTAssertFalse(response.isError)
     }
     
-    func test_sendEvent_errorResponse() {
-        let response = makeErrorResponse()
-        
-        XCTAssertFalse(response.isSuccess)
-        XCTAssertFalse(response.isRedirect)
-        XCTAssertTrue(response.isError)
-    }
-    
     func test_errorResponse() {
         (0...1000).forEach { _ in
             let response = makeResponseWithRandomSuffix(excluding: [":redirect", ":response"])
@@ -71,19 +63,6 @@ class ResponseTests: XCTestCase {
             id: UUID().uuidString,
             flowId: UUID().uuidString,
             payload: payload,
-            identity: UUID().uuidString.data(using: .utf8)!,
-            auth: UUID().uuidString.data(using: .utf8)!,
-            metadata: UUID().uuidString.data(using: .utf8)!
-        )
-    }
-    
-    private func makeErrorResponse() -> Response {
-        return Response(
-            name: "event:name:error",
-            version: Int.random(in: 1...10),
-            id: UUID().uuidString,
-            flowId: UUID().uuidString,
-            payload: UUID().uuidString.data(using: .utf8)!,
             identity: UUID().uuidString.data(using: .utf8)!,
             auth: UUID().uuidString.data(using: .utf8)!,
             metadata: UUID().uuidString.data(using: .utf8)!
