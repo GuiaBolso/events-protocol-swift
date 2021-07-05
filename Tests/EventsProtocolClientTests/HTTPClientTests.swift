@@ -160,7 +160,7 @@ class HTTPClientTests: XCTestCase {
         var responseToReturn: URLResponse?
         
         override init() {
-            self.resumeCalls = 0
+            resumeCalls = 0
         }
         
         override func resume() {
