@@ -9,13 +9,14 @@ public class EventClient {
         self.httpClient = httpClient
     }
     
-    public func sendEvent<T>(
+    public func sendEvent<T, U>(
         url: URL,
         event: T,
         headers: [String: String] = [:],
         timeout: TimeInterval = 60000,
-        completion: @escaping (Result<Response, Error>) -> Void
-    ) where T: Event {
+        responseType: U.Type,
+        completion: @escaping (Result<U, Error>) -> Void
+    ) where T: Event, U: Response {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.timeoutInterval = timeout
@@ -32,7 +33,7 @@ public class EventClient {
             switch result {
             case .success(let data):
                 do {
-                    completion(.success(try JSONDecoder().decode(Response.self, from: data)))
+                    completion(.success(try JSONDecoder().decode(U.self, from: data)))
                 } catch {
                     completion(.failure(error))
                 }

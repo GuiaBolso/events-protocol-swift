@@ -6,7 +6,11 @@ class EventClientTests: XCTestCase {
     func testEventClient_sendEvent_makesOnePostRequest() {
         let (sut, httpClient) = makeSUT()
         
-        sut.sendEvent(url: anyURL(), event: makeRequestEvent()) { _ in }
+        sut.sendEvent(
+            url: anyURL(),
+            event: makeRequestEvent(),
+            responseType: ResponseMock<[String: String?]>.self
+        ) { _ in }
         
         XCTAssertEqual(httpClient.requestsMethods, ["POST"])
     }
@@ -14,21 +18,34 @@ class EventClientTests: XCTestCase {
     func testEventClient_setsDefaultTimeoutToURLRequest() {
         let (sut, httpClient) = makeSUT()
         
-        sut.sendEvent(url: anyURL(), event: makeRequestEvent()) { _ in }
+        sut.sendEvent(
+            url: anyURL(),
+            event: makeRequestEvent(),
+            responseType: ResponseMock<[String: String?]>.self
+        ) { _ in }
         XCTAssertEqual(httpClient.requestsTimeouts, [60000])
     }
     
     func testEventClient_setsCustomTimeoutToURLRequest() {
         let (sut, httpClient) = makeSUT()
         
-        sut.sendEvent(url: anyURL(), event: makeRequestEvent(), timeout: 5000) { _ in }
+        sut.sendEvent(
+            url: anyURL(),
+            event: makeRequestEvent(),
+            timeout: 5000,
+            responseType: ResponseMock<[String: String?]>.self
+        ) { _ in }
         XCTAssertEqual(httpClient.requestsTimeouts, [5000])
     }
     
     func testEventClient_sendEvent_addApplicationJsonContentTypeHeader() {
         let (sut, httpClient) = makeSUT()
         
-        sut.sendEvent(url: anyURL(), event: makeRequestEvent()) { _ in }
+        sut.sendEvent(
+            url: anyURL(),
+            event: makeRequestEvent(),
+            responseType: ResponseMock<[String: String?]>.self
+        ) { _ in }
         
         XCTAssertEqual(httpClient.requestsHeaders, [["Content-Type": "application/json"]])
     }
@@ -38,7 +55,11 @@ class EventClientTests: XCTestCase {
         
         let expectedUrl = URL(string: "https://some-url.com")!
         
-        sut.sendEvent(url: expectedUrl, event: makeRequestEvent()) { _ in }
+        sut.sendEvent(
+            url: expectedUrl,
+            event: makeRequestEvent(),
+            responseType: ResponseMock<[String: String?]>.self
+        ) { _ in }
         
         XCTAssertEqual(httpClient.requestsURLs, [expectedUrl])
     }
@@ -47,7 +68,11 @@ class EventClientTests: XCTestCase {
         let (sut, httpClient) = makeSUT()
         
         let expectedEvent = makeRequestEvent()
-        sut.sendEvent(url: anyURL(), event: expectedEvent) { _ in }
+        sut.sendEvent(
+            url: anyURL(),
+            event: expectedEvent,
+            responseType: ResponseMock<[String: String?]>.self
+        ) { _ in }
         
         let expectedBody = try! JSONEncoder().encode(expectedEvent)
         XCTAssertEqual(httpClient.requestsBodies, [expectedBody])
@@ -58,7 +83,11 @@ class EventClientTests: XCTestCase {
         let sut = EventClient(httpClient: failingClient)
         
         let exp = expectation(description: "wait for event client response")
-        sut.sendEvent(url: anyURL(), event: makeRequestEvent()) { result in
+        sut.sendEvent(
+            url: anyURL(),
+            event: makeRequestEvent(),
+            responseType: ResponseMock<[String: String?]>.self
+        ) { result in
             switch result {
             case .failure(let error):
                 XCTAssertNotNil(error)
@@ -78,7 +107,11 @@ class EventClientTests: XCTestCase {
         successClient.response = "invalid response".data(using: .utf8)
         
         let exp = expectation(description: "wait for event client response")
-        sut.sendEvent(url: anyURL(), event: makeRequestEvent()) { result in
+        sut.sendEvent(
+            url: anyURL(),
+            event: makeRequestEvent(),
+            responseType: ResponseMock<[String: String?]>.self
+        ) { result in
             switch result {
             case .failure(let error):
                 XCTAssert(error is DecodingError)
@@ -99,7 +132,11 @@ class EventClientTests: XCTestCase {
         successClient.response = try? JSONEncoder().encode(expectedResponse)
         
         let exp = expectation(description: "wait for event client response")
-        sut.sendEvent(url: anyURL(), event: makeRequestEvent()) { result in
+        sut.sendEvent(
+            url: anyURL(),
+            event: makeRequestEvent(),
+            responseType: ResponseMock<[String: String?]>.self
+        ) { result in
             switch result {
             case .success(let returnedResponse):
                 XCTAssertNotNil(returnedResponse)
@@ -118,7 +155,8 @@ class EventClientTests: XCTestCase {
         sut.sendEvent(
             url: anyURL(),
             event: makeRequestEvent(),
-            headers: ["Test": "value"]
+            headers: ["Test": "value"],
+            responseType: ResponseMock<[String: String?]>.self
         ) { _ in }
         
         
@@ -130,19 +168,6 @@ class EventClientTests: XCTestCase {
     }
     
     // MARK: - Helpers
-    
-    private func makeSuccessfulResponse() -> Response {
-        return Response(
-            name: "event:name",
-            version: Int.random(in: 1...10),
-            id: UUID().uuidString,
-            flowId: UUID().uuidString,
-            payload: UUID().uuidString.data(using: .utf8)!,
-            identity: UUID().uuidString.data(using: .utf8)!,
-            auth: UUID().uuidString.data(using: .utf8)!,
-            metadata: UUID().uuidString.data(using: .utf8)!
-        )
-    }
     
     private func makeRequestEvent() -> RequestEvent {
         return RequestEvent(

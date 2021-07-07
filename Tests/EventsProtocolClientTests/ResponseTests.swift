@@ -28,26 +28,15 @@ class ResponseTests: XCTestCase {
     }
     
     func test_decodesPayloadToGenericPassedType() {
-        let trueResponse = makeResponse(withPayload: "true".data(using: .utf8)!)
-        XCTAssertTrue(try trueResponse.get(\.payload, as: Bool.self))
-        
-        let intResponse = makeResponse(withPayload: "12".data(using: .utf8)!)
-        XCTAssertEqual(try intResponse.get(\.payload, as: Int.self), 12)
-        
-        let decodeTest = try! JSONEncoder().encode(DecodableTestStruct(value: "payload"))
-        let testResponse = makeResponse(withPayload: decodeTest)
-        
-        XCTAssertNoThrow(try testResponse.get(\.payload, as: DecodableTestStruct.self))
+        XCTAssertNoThrow(try makeResponse(withPayload: "true", type: Bool.self))
+        XCTAssertNoThrow(try makeResponse(withPayload: "12", type: Int.self))
+        XCTAssertNoThrow(try makeResponse(withPayload: "{ \"value\": \"payload\"}", type: DecodableTestStruct.self))
+
     }
     
     func test_throwsErrorIfGenericTypePassedIsWrong() {
-        let sut = makeResponse(withPayload: "true".data(using: .utf8)!)
-        XCTAssertThrowsError(try sut.get(\.payload, as: Int.self))
-    }
-    
-    func test_throwsErrorIfKeypathPassedIsWrong() {
-        let sut = makeResponse(withPayload: "123".data(using: .utf8)!)
-        XCTAssertThrowsError(try sut.get(\.identity, as: Int.self))
+        XCTAssertThrowsError(try makeResponse(withPayload: "true", type: Int.self))
+        XCTAssertThrowsError(try makeResponse(withPayload: "1.3", type: Int.self))
     }
     
     // MARK: - Helpers
@@ -56,61 +45,24 @@ class ResponseTests: XCTestCase {
         let value: String
     }
     
-    private func makeResponse(withPayload payload: Data) -> Response {
-        return Response(
-            name: "event:name:error",
-            version: Int.random(in: 1...10),
-            id: UUID().uuidString,
-            flowId: UUID().uuidString,
-            payload: payload,
-            identity: UUID().uuidString.data(using: .utf8)!,
-            auth: UUID().uuidString.data(using: .utf8)!,
-            metadata: UUID().uuidString.data(using: .utf8)!
-        )
+    private func makeResponse<T>(withPayload payload: String, type: T.Type) throws -> ResponseMock<T> {
+        let json = EventsProtocolClientTests.makeJSON(name: "event:name:response", payload: payload)
+        return try JSONDecoder().decode(ResponseMock<T>.self, from: json)
     }
     
-    private func makeRedirectResponse() -> Response {
-        return Response(
-            name: "event:name:redirect",
-            version: Int.random(in: 1...10),
-            id: UUID().uuidString,
-            flowId: UUID().uuidString,
-            payload: UUID().uuidString.data(using: .utf8)!,
-            identity: UUID().uuidString.data(using: .utf8)!,
-            auth: UUID().uuidString.data(using: .utf8)!,
-            metadata: UUID().uuidString.data(using: .utf8)!
-        )
+    private func makeRedirectResponse() -> ResponseMock<[String: String?]> {
+        return EventsProtocolClientTests.makeResponse(name: "event:name:redirect")
     }
     
-    private func makeResponseWithRandomSuffix(excluding excludingStrings: [String] = []) -> Response {
+    private func makeResponseWithRandomSuffix(excluding excludingStrings: [String] = []) -> ResponseMock<[String: String?]> {
         var name: String
         
         repeat {
             name = UUID().uuidString
         } while excludingStrings.first(where: { name.hasSuffix($0) }) != nil
         
-        return Response(
-            name: name,
-            version: Int.random(in: 1...10),
-            id: UUID().uuidString,
-            flowId: UUID().uuidString,
-            payload: UUID().uuidString.data(using: .utf8)!,
-            identity: UUID().uuidString.data(using: .utf8)!,
-            auth: UUID().uuidString.data(using: .utf8)!,
-            metadata: UUID().uuidString.data(using: .utf8)!
-        )
-    }
-    
-    private func makeSuccessfulResponse() -> Response {
-        return Response(
-            name: "event:response",
-            version: Int.random(in: 1...10),
-            id: UUID().uuidString,
-            flowId: UUID().uuidString,
-            payload: UUID().uuidString.data(using: .utf8)!,
-            identity: UUID().uuidString.data(using: .utf8)!,
-            auth: UUID().uuidString.data(using: .utf8)!,
-            metadata: UUID().uuidString.data(using: .utf8)!
-        )
+        return EventsProtocolClientTests.makeResponse(name: name)
     }
 }
+
+

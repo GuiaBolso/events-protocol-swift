@@ -1,6 +1,6 @@
 import Foundation
 
-public protocol Event: Encodable {
+public protocol Event: Codable {
     associatedtype Payload
     associatedtype Identity
     associatedtype Auth
