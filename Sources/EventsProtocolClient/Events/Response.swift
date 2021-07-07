@@ -27,3 +27,5 @@ public struct Response: Event {
         return try JSONDecoder().decode(T.self, from: property)
     }
 }
+
+extension Response: Decodable { }
