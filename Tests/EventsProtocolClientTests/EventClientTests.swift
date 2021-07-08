@@ -136,6 +136,31 @@ class EventClientTests: XCTestCase {
         wait(for: [exp], timeout: 1)
     }
     
+    func test_sendEvent_successHTTPClientRequestsWithValidCustomResponseWillReturnAResponse() {
+        let successClient = HTTPClientSuccessStub()
+        let sut = EventClient(httpClient: successClient)
+        
+        struct DecodableTestPayload: Decodable {
+            let value: String
+        }
+        
+        let expectedResponse = DecodableTestPayload(value: "test")
+        successClient.response = makeJSONResponse(payload: "{ \"value\": \"test\" } ")
+        
+        let exp = expectation(description: "wait for event client response")
+        sut.sendEvent(url: anyURL(), event: makeRequestEvent(), responseType: DecodableTestPayload.self) { result in
+            switch result {
+            case .success(let returnedResponse):
+                XCTAssertNotNil(returnedResponse)
+            default:
+                XCTFail("Expected success with \(expectedResponse), got \(result) instead")
+            }
+            exp.fulfill()
+        }
+        
+        wait(for: [exp], timeout: 1)
+    }
+    
     func test_sendEvent_successHTTPClientRequestsWithEventErrorWillReturnAEventError() {
         let successClient = HTTPClientSuccessStub()
         let sut = EventClient(httpClient: successClient)

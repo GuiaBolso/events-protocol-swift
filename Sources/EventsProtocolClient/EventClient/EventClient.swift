@@ -62,8 +62,9 @@ public class EventClient {
         let payload = json["payload"]
         if let payload = payload as? T {
             return payload
-        } else if let dict = payload as? Data {
-            return try JSONDecoder().decode(T.self, from: dict)
+        } else if let dict = payload as? NSDictionary {
+            let data = try JSONSerialization.data(withJSONObject: dict, options: [])
+            return try JSONDecoder().decode(T.self, from: data)
         }
         
         throw Error.invalidPayload(payload)
