@@ -112,6 +112,30 @@ class EventClientTests: XCTestCase {
         wait(for: [exp], timeout: 1)
     }
     
+    func test_sendEvent_successHTTPClientRequestsWithEventErrorWillReturnAEventError() {
+        let successClient = HTTPClientSuccessStub()
+        let sut = EventClient(httpClient: successClient)
+        
+        successClient.response = makeJSONResponse(name: "event:error")
+        
+        let exp = expectation(description: "wait for event client response")
+        sut.sendEvent(url: anyURL(), event: makeRequestEvent(), responseType: Int.self) { result in
+            switch result {
+            case .failure(let returnedResponse):
+                switch returnedResponse as! EventClient.Error {
+                case .eventError(_): break
+                default:
+                    XCTFail("Expected eventError, got \(result) instead")
+                }
+            default:
+                XCTFail("Expected eventError, got \(result) instead")
+            }
+            exp.fulfill()
+        }
+        
+        wait(for: [exp], timeout: 1)
+    }
+    
     func test_sendEvent_addParmsHeadersToURLRequest() {
         let (sut, httpClient) = makeSUT()
         
@@ -186,7 +210,7 @@ class EventClientTests: XCTestCase {
     
     private func makeJSONResponse(
         name: String = "event:response",
-        payload: String) -> Data {
+        payload: String = "{}") -> Data {
         return """
             {
               "name": "\(name)",
