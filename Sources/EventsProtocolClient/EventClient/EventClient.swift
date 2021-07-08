@@ -64,9 +64,9 @@ public class EventClient {
             return payload
         } else if let dict = payload as? Data {
             return try JSONDecoder().decode(T.self, from: dict)
-        } else {
-            throw Error.invalidPayload(payload)
         }
+        
+        throw Error.invalidPayload(payload)
     }
     
     private func isSuccess(_ name: String) -> Bool {

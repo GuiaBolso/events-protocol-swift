@@ -91,6 +91,30 @@ class EventClientTests: XCTestCase {
         wait(for: [exp], timeout: 1)
     }
     
+    func test_sendEvent_successHTTPClientRequestsWithInvalidDictionaryResponseWillEncodeError() {
+        let successClient = HTTPClientSuccessStub()
+        let sut = EventClient(httpClient: successClient)
+        
+        successClient.response = "{\"someKey\": \"someValue\"}".data(using: .utf8)
+        
+        let exp = expectation(description: "wait for event client response")
+        sut.sendEvent(url: anyURL(), event: makeRequestEvent(), responseType: String?.self) { result in
+            switch result {
+            case .failure(let error):
+                switch error as! EventClient.Error {
+                case .invalidResponse(_): break
+                default:
+                    XCTFail("Expected EventClient.Error.invalidResponse, got \(result) instead")
+                }
+            default:
+                XCTFail("Expected EventClient.Error.invalidResponse, got \(result) instead")
+            }
+            exp.fulfill()
+        }
+        
+        wait(for: [exp], timeout: 1)
+    }
+    
     func test_sendEvent_successHTTPClientRequestsWithValidResponseWillReturnAResponse() {
         let successClient = HTTPClientSuccessStub()
         let sut = EventClient(httpClient: successClient)
