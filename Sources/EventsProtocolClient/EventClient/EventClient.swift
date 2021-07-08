@@ -1,6 +1,13 @@
 import Foundation
 
 public class EventClient {
+    public enum Error: Swift.Error {
+        case invalidResponse(Data)
+        case eventError(Data)
+        case eventRedirect(Data)
+        case invalidPayload(Any?)
+    }
+    
     private let httpClient: HTTPClientAdapter
     
     public init(
@@ -15,8 +22,8 @@ public class EventClient {
         headers: [String: String] = [:],
         timeout: TimeInterval = 60000,
         responseType: U.Type,
-        completion: @escaping (Result<U, Error>) -> Void
-    ) where T: Event, U: Response {
+        completion: @escaping (Result<U, Swift.Error>) -> Void
+    ) where T: Event, U: Decodable {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.timeoutInterval = timeout
@@ -33,7 +40,7 @@ public class EventClient {
             switch result {
             case .success(let data):
                 do {
-                    completion(.success(try JSONDecoder().decode(U.self, from: data)))
+                    completion(.success(try self.parseResponse(data)))
                 } catch {
                     completion(.failure(error))
                 }
@@ -42,4 +49,36 @@ public class EventClient {
             }
         }
     }
+    
+    private func parseResponse<T>(_ data: Data) throws -> T where T: Decodable {
+        guard let json = try JSONSerialization.jsonObject(with: data, options: []) as? NSDictionary,
+              let name = json["name"] as? String else {
+            throw Error.invalidResponse(data)
+        }
+        
+        if isRedirect(name) { throw Error.eventRedirect(data) }
+        if isError(name) { throw Error.eventError(data) }
+        
+        let payload = json["payload"]
+        if let payload = payload as? T {
+            return payload
+        } else if let dict = payload as? Data {
+            return try JSONDecoder().decode(T.self, from: dict)
+        } else {
+            throw Error.invalidPayload(payload)
+        }
+    }
+    
+    private func isSuccess(_ name: String) -> Bool {
+        return name.hasSuffix(":response")
+    }
+    
+    private func isRedirect(_ name: String) -> Bool {
+        return name.hasSuffix(":redirect")
+    }
+    
+    private func isError(_ name: String) -> Bool {
+        return !isRedirect(name) && !isSuccess(name)
+    }
+    
 }
