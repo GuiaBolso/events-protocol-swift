@@ -136,6 +136,30 @@ class EventClientTests: XCTestCase {
         wait(for: [exp], timeout: 1)
     }
     
+    func test_sendEvent_successHTTPClientRequestsWithEventRediredtWillReturnARedirectError() {
+        let successClient = HTTPClientSuccessStub()
+        let sut = EventClient(httpClient: successClient)
+        
+        successClient.response = makeJSONResponse(name: "event:redirect")
+        
+        let exp = expectation(description: "wait for event client response")
+        sut.sendEvent(url: anyURL(), event: makeRequestEvent(), responseType: Int.self) { result in
+            switch result {
+            case .failure(let returnedResponse):
+                switch returnedResponse as! EventClient.Error {
+                case .eventRedirect(_): break
+                default:
+                    XCTFail("Expected eventRedirect, got \(result) instead")
+                }
+            default:
+                XCTFail("Expected eventError, got \(result) instead")
+            }
+            exp.fulfill()
+        }
+        
+        wait(for: [exp], timeout: 1)
+    }
+    
     func test_sendEvent_addParmsHeadersToURLRequest() {
         let (sut, httpClient) = makeSUT()
         
